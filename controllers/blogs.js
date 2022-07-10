@@ -21,8 +21,21 @@ router.delete("/:id", async (req, res) => {
   try {
     const blog = await Blog.findOne({where: {id: Number(req.params.id)}})
     if (blog) {
-      await blog.destroy({where: {id: Number(req.params.id)}})
+      await blog.destroy()
       return (res.status(200).json({ message: "Resource Deleted" }))
+    }
+    return(res.status(404).json({ message: "Resource does not exist"}))
+  } catch (error) {
+    return res.status(400).json({ error });
+  }
+})
+
+router.put("/:id", async (req, res) => {
+  try {
+    const blog = await Blog.findOne({where: {id: Number(req.params.id)}})
+    if (blog) {
+      await blog.update({likes: req.body.likes})
+      return res.json(blog);
     }
     return(res.status(404).json({ message: "Resource does not exist"}))
   } catch (error) {
