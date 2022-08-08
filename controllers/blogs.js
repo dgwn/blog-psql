@@ -40,12 +40,19 @@ router.post("/", tokenExtractor, async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", tokenExtractor, async (req, res) => {
   try {
+    const user = await User.findByPk(req.decodedToken.id);
     const blog = await Blog.findOne({ where: { id: Number(req.params.id) } });
     if (blog) {
-      await blog.destroy();
-      return res.status(200).json({ message: "Resource Deleted" });
+      if (blog.userId == user.id) {
+        await blog.destroy();
+        return res.status(200).json({ message: "Resource Deleted" });
+      } else {
+        return res
+          .status(401)
+          .json({ message: "Sorry, you most be the blog's poster" });
+      }
     }
     return res.status(404).json({ message: "Resource does not exist" });
   } catch (error) {
