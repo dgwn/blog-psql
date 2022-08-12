@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { SECRET } = require("../util/config");
 
 const { Blog, User } = require("../models");
+const { sequelize } = require("../models/blog");
 
 const errorHandler = (error, req, res, next) => {
   console.error(`Error(s): [${error.message}]`);
@@ -40,6 +41,7 @@ router.get("/", async (req, res) => {
     };
   }
   const blogs = await Blog.findAll({
+    order: [["likes", "DESC"]],
     attributes: { exclude: ["userId"] },
     include: {
       model: User,
