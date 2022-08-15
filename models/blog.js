@@ -25,6 +25,17 @@ Blog.init(
     likes: {
       type: DataTypes.INTEGER,
       defaultValue: 0
+    },
+    yearWritten: {
+      type: DataTypes.INTEGER,
+      validate: {
+        isInYearRange(value) {
+          const currentYear = new Date().getFullYear();
+          if (parseInt(value) < 1991 || parseInt(value) > currentYear) {
+            throw new Error("Year must be between 1991 and present");
+          }
+        }
+      }
     }
   },
   {
