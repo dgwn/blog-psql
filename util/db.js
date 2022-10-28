@@ -24,6 +24,19 @@ const runMigrations = async () => {
   });
 };
 
+const rollbackMigration = async () => {
+  await sequelize.authenticate();
+  const migrator = new Umzug({
+    migrations: {
+      glob: "migrations/*.js"
+    },
+    storage: new SequelizeStorage({ sequelize, tableName: "migrations" }),
+    context: sequelize.getQueryInterface(),
+    logger: console
+  });
+  await migrator.down();
+};
+
 const connectToDatabase = async () => {
   try {
     await sequelize.authenticate();
@@ -36,4 +49,4 @@ const connectToDatabase = async () => {
   return null;
 };
 
-module.exports = { connectToDatabase, sequelize };
+module.exports = { connectToDatabase, sequelize, rollbackMigration };

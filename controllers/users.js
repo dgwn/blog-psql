@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { User } = require("../models");
+const { User, ReadingList } = require("../models");
 const { Blog } = require("../models");
 
 const errorHandler = (error, req, res, next) => {
@@ -16,6 +16,22 @@ router.get("/", async (req, res) => {
     }
   });
   res.json(users);
+});
+
+router.get("/:id", async (req, res) => {
+  const user = await User.findOne({
+    attributes: { exclude: ["id", "createdAt", "updatedAt"] },
+    include: {
+      model: Blog,
+      as: "readings",
+      attributes: { exclude: ["userId", "createdAt", "updatedAt"] },
+      through: {
+        attributes: []
+      }
+    },
+    where: { id: req.params.id }
+  });
+  res.json(user);
 });
 
 router.post("/", async (req, res) => {
