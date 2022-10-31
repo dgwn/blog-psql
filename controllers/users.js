@@ -1,6 +1,8 @@
 const router = require("express").Router();
-const { User, ReadingList } = require("../models");
+const { User } = require("../models");
 const { Blog } = require("../models");
+
+const { Op } = require("sequelize");
 
 const errorHandler = (error, req, res, next) => {
   console.error(`Error(s): [${error.message}]`);
@@ -19,14 +21,25 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
+  let readStatus = {
+    [Op.in]: [true, false]
+  };
+  if (req.query.read) {
+    readStatus = req.query.read === "true";
+  }
+
   const user = await User.findOne({
     attributes: { exclude: ["id", "createdAt", "updatedAt"] },
     include: {
       model: Blog,
       as: "readings",
       attributes: { exclude: ["userId", "createdAt", "updatedAt"] },
+
       through: {
-        attributes: ["id", "readStatus"]
+        attributes: ["id", "readStatus"],
+        where: {
+          readStatus
+        }
       }
     },
     where: { id: req.params.id }
