@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const { SECRET } = require("../util/config");
 
 const { Blog, User } = require("../models");
-const { sequelize } = require("../models/blog");
 
 const errorHandler = (error, req, res, next) => {
   console.error(`Error(s): [${error.message}]`);
