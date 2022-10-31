@@ -1,6 +1,24 @@
 const router = require("express").Router();
 
+const jwt = require("jsonwebtoken");
+const { SECRET } = require("../util/config");
+
 const ReadingList = require("../models/readingList");
+const { User } = require("../models");
+
+const tokenExtractor = (req, res, next) => {
+  const authorization = req.get("authorization");
+  if (authorization && authorization.toLowerCase().startsWith("bearer ")) {
+    try {
+      req.decodedToken = jwt.verify(authorization.substring(7), SECRET);
+    } catch {
+      res.status(401).json({ error: "token invalid " });
+    }
+  } else {
+    res.status(401).json({ error: "token missing" });
+  }
+  next();
+};
 
 router.post("/", async (req, res) => {
   try {
@@ -13,4 +31,23 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.put("/:id", tokenExtractor, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.decodedToken.id);
+    const listItem = await ReadingList.findOne({
+      where: { id: Number(req.params.id) }
+    });
+
+    if (listItem.userId == user.id) {
+      await listItem.update({ readStatus: req.body.read });
+      return res.status(200).json({ message: "Marked as read" });
+    } else {
+      return res
+        .status(401)
+        .json({ message: "Sorry, this is not your reading list" });
+    }
+  } catch (error) {
+    return res.status(400).json();
+  }
+});
 module.exports = router;
