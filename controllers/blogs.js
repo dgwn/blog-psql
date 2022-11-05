@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { SECRET } = require("../util/config");
 
 const { Blog, User } = require("../models");
+const ActiveSession = require("../models/activeSessions");
 
 const errorHandler = (error, req, res, next) => {
   console.error(`Error(s): [${error.message}]`);
@@ -54,8 +55,19 @@ router.get("/", async (req, res) => {
 router.post("/", tokenExtractor, async (req, res) => {
   try {
     const user = await User.findByPk(req.decodedToken.id);
-    const blog = await Blog.create({ ...req.body, userId: user.id });
-    return res.json(blog);
+    const session = await ActiveSession.findOne({
+      where: { user_id: Number(user.id) }
+    });
+    if (session) {
+      if (user.disabled == false) {
+        const blog = await Blog.create({ ...req.body, userId: user.id });
+        return res.json(blog);
+      } else {
+        return res.status(400).json("user is disabled");
+      }
+    } else {
+      return res.status(401).json({ message: "You must be logged in" });
+    }
   } catch (error) {
     return res.status(400).json({ error });
   }
@@ -65,17 +77,28 @@ router.delete("/:id", tokenExtractor, async (req, res) => {
   try {
     const user = await User.findByPk(req.decodedToken.id);
     const blog = await Blog.findOne({ where: { id: Number(req.params.id) } });
-    if (blog) {
-      if (blog.userId == user.id) {
-        await blog.destroy();
-        return res.status(200).json({ message: "Resource Deleted" });
+    const session = await ActiveSession.findOne({
+      where: { user_id: Number(user.id) }
+    });
+    if (session) {
+      if (user.disabled == false) {
+        if (blog) {
+          if (blog.userId == user.id) {
+            await blog.destroy();
+            return res.status(200).json({ message: "Resource Deleted" });
+          } else {
+            return res
+              .status(401)
+              .json({ message: "Sorry, you most be the blog's poster" });
+          }
+        }
+        return res.status(404).json({ message: "Resource does not exist" });
       } else {
-        return res
-          .status(401)
-          .json({ message: "Sorry, you most be the blog's poster" });
+        return res.status(400).json("user is disabled");
       }
+    } else {
+      return res.status(401).json({ message: "You must be logged in" });
     }
-    return res.status(404).json({ message: "Resource does not exist" });
   } catch (error) {
     return res.status(400).json({ error });
   }
